@@ -1,0 +1,19 @@
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Go binaries
+backend/cmd/api/api
+backend/cmd/api/main
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Docker
+postgres_data/

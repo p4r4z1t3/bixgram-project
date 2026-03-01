@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: bixgram_db
+    restart: always
+    environment:
+      POSTGRES_USER: bixgram_user
+      POSTGRES_PASSWORD: bixgram_password
+      POSTGRES_DB: bixgram_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
