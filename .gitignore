@@ -5,9 +5,11 @@
 # OS
 .DS_Store
 
-# Go binaries
+# Go
 backend/cmd/api/api
 backend/cmd/api/main
+backend/.env
+backend/bin/
 
 # Frontend
 frontend/node_modules/
@@ -17,3 +19,10 @@ frontend/.env.local
 
 # Docker
 postgres_data/
+
+# General
+.env
+*.exe
+*.dll
+*.so
+*.dylib
