@@ -33,10 +33,10 @@ func InitDB() {
 	fmt.Println("Database connection established")
 
 	// Автомиграция: GORM сам создаст таблицу, если её нет
-	err = DB.AutoMigrate(&models.User{})
+	err = DB.AutoMigrate(&models.Event{}, &models.Profile{})
 	if err != nil {
 		log.Fatal("AutoMigrate failed: ", err)
 	}
 
-	fmt.Println("Database migrated successfully")
+	fmt.Println("Relay storage migrated successfully")
 }

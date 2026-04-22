@@ -6,43 +6,54 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/p4r4z1te/bixgram/internal/handlers"
-	"github.com/p4r4z1te/bixgram/internal/middleware"
+	"github.com/p4r4z1te/bixgram/internal/ipfs"
+	"github.com/p4r4z1te/bixgram/internal/relay"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(manager *relay.Manager, ipfsService *ipfs.Service) *gin.Engine {
 	r := gin.Default()
 
-	// Настройка CORS (чтобы фронт мог общаться с бэком)
+	// Настройка CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"}, // Порт Vite по умолчанию
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Публичные маршруты
-	auth := r.Group("/auth")
+	// WebSocket эндпоинт Nostr-реле
+	r.GET("/ws", func(c *gin.Context) {
+		relay.HandleWebSocket(manager, c.Writer, c.Request)
+	})
+
+	// Public Profile API
+	r.GET("/api/profiles/:pubkey", handlers.GetProfile())
+
+	// IPFS Upload
+	r.POST("/upload", handlers.UploadToIPFS(ipfsService))
+
+	// Admin API
+	admin := r.Group("/api/admin")
 	{
-		auth.POST("/register", handlers.Register)
-		auth.POST("/login", handlers.Login)
+		admin.GET("/profiles", handlers.GetProfiles())
+		admin.GET("/events", handlers.GetEvents())
+		admin.GET("/stats", handlers.GetStats())
 	}
 
-	// Защищенные маршруты
-	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware())
-	{
-		api.GET("/me", handlers.GetMe)
-	}
+	// Эндпоинт для мониторинга (Prometheus)
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Пинг для проверки
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "online",
-			"message": "BIXGRAM_API_ESTABLISHED",
+			"message": "BIXGRAM_RELAY_ESTABLISHED",
 		})
 	})
 
 	return r
 }
+

@@ -11,6 +11,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: bixgram_adminer
+    restart: always
+    ports:
+      - "8081:8080"
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: bixgram_ipfs
+    restart: always
+    ports:
+      - "4001:4001"    # Swarm
+      - "127.0.0.1:5001:5001"  # API
+      - "127.0.0.1:8082:8080"  # Gateway (Host:8082 -> Container:8080)
+    volumes:
+      - ipfs_staging:/export
+      - ipfs_data:/data/ipfs
       
 volumes:
   postgres_data:
+  ipfs_staging:
+  ipfs_data:

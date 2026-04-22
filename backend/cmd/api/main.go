@@ -6,30 +6,45 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/p4r4z1te/bixgram/internal/database"
+	"github.com/p4r4z1te/bixgram/internal/ipfs"
+	"github.com/p4r4z1te/bixgram/internal/relay"
 	"github.com/p4r4z1te/bixgram/internal/router"
 )
 
 func main() {
-	// Загружаем .env файл. Если его нет - останавливаемся, смысла дальше идти нет.
+	// Загружаем .env
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Critical error: .env file NOT FOUND in current directory. Error: %v", err)
+		log.Println("No .env file found, using defaults")
 	}
 
-	// Инициализируем базу данных перед запуском сервера
+	// База данных
 	database.InitDB()
 
-	// Настраиваем маршруты
-	r := router.SetupRouter()
+	// IPFS сервис
+	ipfsURL := os.Getenv("IPFS_API_URL")
+	if ipfsURL == "" {
+		ipfsURL = "localhost:5001"
+	}
+	ipfsService := ipfs.NewService(ipfsURL)
+	log.Printf("IPFS Service connected to %s", ipfsURL)
+
+	// Менеджер Nostr-реле
+	manager := relay.NewManager()
+	go manager.Run()
+
+	// Маршруты
+	r := router.SetupRouter(manager, ipfsService)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
-	log.Printf("BIXGRAM API starting on port :%s", port)
-
+	
+	log.Printf("BIXGRAM RELAY starting on :%s", port)
+	
 	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server: ", err)
+		log.Fatal("Failed to start relay: ", err)
 	}
 }
+

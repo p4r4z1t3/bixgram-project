@@ -1,62 +1,69 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/axios';
-
-interface User {
-    id: number;
-    username: string;
-    bio: string;
-    location: string;
-    created_at: string;
-}
+import { getPublicKey, finalizeEvent } from 'nostr-tools';
 
 interface AuthContextType {
-    user: User | null;
+    pubkey: string | null;
+    privkey: string | null;
     loading: boolean;
-    login: (token: string, userData: User) => void;
+    login: (privkeyHex: string) => void;
     logout: () => void;
-    checkAuth: () => Promise<void>;
+    signEvent: (eventTemplate: any) => any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Вспомогательная функция для перевода hex в Uint8Array (без внешних зависимостей)
+const hexToBytes = (hex: string): Uint8Array => {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substring(i * 2, (i * 2) + 2), 16);
+    }
+    return bytes;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [pubkey, setPubkey] = useState<string | null>(null);
+    const [privkey, setPrivkey] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const login = (token: string, userData: User) => {
-        localStorage.setItem('token', token);
-        setUser(userData);
+    const login = (privkeyHex: string) => {
+        try {
+            const privBytes = hexToBytes(privkeyHex);
+            const pub = getPublicKey(privBytes);
+            localStorage.setItem('privkey', privkeyHex);
+            localStorage.setItem('pubkey', pub);
+            setPrivkey(privkeyHex);
+            setPubkey(pub);
+        } catch (e) {
+            console.error('Login error:', e);
+            throw new Error('Invalid key');
+        }
+    };
+
+    const signEvent = (eventTemplate: any) => {
+        if (!privkey) throw new Error('No private key available for signing');
+        return finalizeEvent(eventTemplate, hexToBytes(privkey));
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-    };
-
-    const checkAuth = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setLoading(false);
-            return;
-        }
-
-        try {
-            const response = await api.get('/api/me');
-            setUser(response.data);
-        } catch (error) {
-            console.error('Check auth failed:', error);
-            logout();
-        } finally {
-            setLoading(false);
-        }
+        localStorage.removeItem('privkey');
+        localStorage.removeItem('pubkey');
+        setPrivkey(null);
+        setPubkey(null);
     };
 
     useEffect(() => {
-        checkAuth();
+        const storedPriv = localStorage.getItem('privkey');
+        const storedPub = localStorage.getItem('pubkey');
+        if (storedPriv && storedPub) {
+            setPrivkey(storedPriv);
+            setPubkey(storedPub);
+        }
+        setLoading(false);
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
+        <AuthContext.Provider value={{ pubkey, privkey, loading, login, logout, signEvent }}>
             {children}
         </AuthContext.Provider>
     );
@@ -64,8 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };

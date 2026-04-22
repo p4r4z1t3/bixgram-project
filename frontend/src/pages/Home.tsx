@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, MapPin, Calendar } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 
 const Home: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { pubkey, logout } = useAuth();
 
-    if (!user) {
+    if (!pubkey) {
         return (
             <div className="welcome-container">
                 <h1>Welcome to BIXGRAM</h1>
@@ -21,19 +21,7 @@ const Home: React.FC = () => {
                     <div className="profile-avatar">
                         <User size={64} />
                     </div>
-                    <h1>@{user.username}</h1>
-                    <p className="bio">{user.bio || 'No bio yet...'}</p>
-                </div>
-
-                <div className="profile-details">
-                    <div className="detail-item">
-                        <MapPin size={20} />
-                        <span>{user.location || 'Unknown location'}</span>
-                    </div>
-                    <div className="detail-item">
-                        <Calendar size={20} />
-                        <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
-                    </div>
+                    <h1>Identity: {pubkey.slice(0, 16)}...</h1>
                 </div>
 
                 <button onClick={logout} className="logout-button">

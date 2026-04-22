@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios';
+import { nip19 } from 'nostr-tools';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Lock, User } from 'lucide-react';
+import { LogIn, ShieldAlert, Key } from 'lucide-react';
 
 const Login: React.FC = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [nsec, setNsec] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     
@@ -19,11 +18,28 @@ const Login: React.FC = () => {
         setLoading(true);
 
         try {
-            const loginRes = await api.post('/auth/login', { username, password });
-            login(loginRes.data.token, loginRes.data.user);
+            const trimmed = nsec.trim();
+            if (!trimmed.startsWith('nsec1')) {
+                throw new Error('Key must start with "nsec1"');
+            }
+
+            const decoded = nip19.decode(trimmed);
+            if (decoded.type !== 'nsec') {
+                throw new Error('Invalid nsec key');
+            }
+            
+            // Используем hex из nostr-tools, если доступно, иначе примитив
+            const privKeyBytes = decoded.data as Uint8Array;
+            const hexKey = Array.from(privKeyBytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+            
+            console.log('Login hex key:', hexKey);
+            login(hexKey);
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Login failed');
+            console.error('CRITICAL LOGIN ERROR:', err);
+            setError(`Error: ${err.message}. Make sure you enter a valid nsec1... key.`);
         } finally {
             setLoading(false);
         }
@@ -37,49 +53,39 @@ const Login: React.FC = () => {
                         <LogIn size={32} />
                     </div>
                     <h1>Welcome Back</h1>
-                    <p>Log in to your BIXGRAM account</p>
+                    <p>Enter your secret key to continue</p>
                 </div>
 
                 {error && <div className="auth-error">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
-                        <label htmlFor="username">Username</label>
+                        <label htmlFor="nsec">Secret Key (nsec)</label>
                         <div className="input-with-icon">
-                            <User size={20} />
+                            <Key size={20} />
                             <input
-                                id="username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Your username"
+                                id="nsec"
+                                type="password"
+                                value={nsec}
+                                onChange={(e) => setNsec(e.target.value)}
+                                placeholder="nsec1..."
                                 required
                             />
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <div className="input-with-icon">
-                            <Lock size={20} />
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Your password"
-                                required
-                            />
-                        </div>
+                    <div className="warning-box login-warning">
+                        <ShieldAlert size={18} />
+                        <span>Never share your secret key!</span>
                     </div>
 
                     <button type="submit" className="auth-button" disabled={loading}>
-                        {loading ? 'Logging in...' : 'Sign In'}
+                        {loading ? 'Decrypting...' : 'Log In'}
                     </button>
                 </form>
 
                 <div className="auth-footer">
-                    <p>Don't have an account? <Link to="/register">Sign Up</Link></p>
+                    <p>New to BIXGRAM? <Link to="/register">Create Identity</Link></p>
                 </div>
             </div>
         </div>
