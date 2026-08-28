@@ -46,6 +46,17 @@ func SetupRouter(manager *relay.Manager, ipfsService *ipfs.Service) *gin.Engine 
 	// Эндпоинт для мониторинга (Prometheus)
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
+	// Корневой эндпоинт для проверки работы
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "online",
+			"name":    "BIXGRAM Relay & API Server",
+			"version": "1.0.0",
+			"ws":      "/ws",
+			"ping":    "/ping",
+		})
+	})
+
 	// Пинг для проверки
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{

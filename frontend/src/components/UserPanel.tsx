@@ -1,26 +1,51 @@
-import React from 'react';
-import { Mic, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mic, Settings, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
 
 const UserPanel: React.FC = () => {
     const { pubkey } = useAuth();
-    const npub = pubkey?.slice(0, 8) || 'Unknown';
+    const { setSettingsOpen } = useUI();
+    const [profile, setProfile] = useState<{ display_name?: string; name?: string; picture?: string }>({});
+
+    useEffect(() => {
+        if (!pubkey) return;
+        fetch(`http://localhost:8080/api/profiles/${pubkey}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) {
+                    setProfile({
+                        display_name: data.display_name,
+                        name: data.name,
+                        picture: data.picture
+                    });
+                }
+            })
+            .catch(() => {});
+    }, [pubkey]);
+
+    const displayName = profile.display_name || (profile.name ? `@${profile.name}` : (pubkey ? `${pubkey.slice(0, 8)}...` : 'Unknown'));
 
     return (
         <div className="user-panel-discord">
-            <div className="user-info-section">
+            <div className="user-info-section" onClick={() => setSettingsOpen(true)} style={{ cursor: 'pointer' }}>
                 <div className="avatar-small">
-                    {npub[0].toUpperCase()}
+                    {profile.picture ? (
+                        <img src={profile.picture} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                        displayName.charAt(0).toUpperCase()
+                    )}
                     <div className="status-dot-online"></div>
                 </div>
                 <div className="name-status">
-                    <div className="user-name">{npub}</div>
+                    <div className="user-name" title={displayName}>{displayName}</div>
                     <div className="online-label">в сети</div>
                 </div>
             </div>
             <div className="panel-actions">
-                <button className="panel-icon-btn"><Mic size={16} /></button>
-                <button className="panel-icon-btn"><Settings size={16} /></button>
+                <button className="panel-icon-btn" title="Настройки профиля" onClick={() => setSettingsOpen(true)}>
+                    <Settings size={16} />
+                </button>
             </div>
 
             <style>{`

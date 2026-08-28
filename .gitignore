@@ -1,28 +1,45 @@
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# OS files
 .DS_Store
+Thumbs.db
 
-# Go
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Go binaries & build artifacts
 backend/cmd/api/api
 backend/cmd/api/main
-backend/.env
 backend/bin/
-
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-frontend/.env.local
-
-# Docker
-postgres_data/
-
-# General
-.env
 *.exe
 *.dll
 *.so
 *.dylib
+
+# Node / Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database & IPFS persistent volumes
+postgres_data/
+ipfs_data/
+ipfs_staging/
+
+# Logs
+*.log

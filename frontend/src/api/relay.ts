@@ -38,9 +38,26 @@ class NostrRelay {
         this.subscriptions.delete(subId);
     }
 
+    publish(event: any): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                reject(new Error('WebSocket is not connected'));
+                return;
+            }
+            try {
+                this.send(['EVENT', event]);
+                resolve(true);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
     send(message: any) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
+        } else {
+            console.warn('Relay WebSocket is not open. ReadyState:', this.ws?.readyState);
         }
     }
 }

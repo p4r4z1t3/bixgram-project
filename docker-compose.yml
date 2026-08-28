@@ -4,9 +4,9 @@ services:
     container_name: bixgram_db
     restart: always
     environment:
-      POSTGRES_USER: bixgram_user
-      POSTGRES_PASSWORD: bixgram_password
-      POSTGRES_DB: bixgram_db
+      POSTGRES_USER: ${POSTGRES_USER:-bixgram_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bixgram_password}
+      POSTGRES_DB: ${POSTGRES_DB:-bixgram_db}
     ports:
       - "5432:5432"
     volumes:
